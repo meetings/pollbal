@@ -1,0 +1,23 @@
+{
+  "name": "pollbal",
+  "version": "0.0.1",
+  "description": "Resource polling agent for Perlbal",
+  "bin": "./index.js",
+  "scripts": {
+    "test": "echo No tests specified"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/meetings/pollbal.git"
+  },
+  "keywords": [
+    "perlbal"
+  ],
+  "author": "Tuomas Starck <tuomas@meetin.gs>",
+  "license": "BSD",
+  "readmeFilename": "README.md",
+  "gitHead": "ad6708c5d73542ef6611bcc71cb774f21348148a",
+  "bugs": {
+    "url": "https://github.com/meetings/pollbal/issues"
+  }
+}
