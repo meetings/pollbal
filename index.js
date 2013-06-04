@@ -1,5 +1,4 @@
-/* index.js
- */
+#!/usr/bin/env nodejs
 
 var util        = require('util')
 var listHandler = require('./lib/listHandler')
