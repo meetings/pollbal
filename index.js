@@ -1,89 +1,98 @@
 #!/usr/bin/env nodejs
 
 var util        = require('util')
+var async       = require('async')
 var listHandler = require('./lib/listHandler')
 var makeRequest = require('./lib/httpRequest').makeRequest
-var writePool   = require('./lib/poolWriter').writePool
+var poolWriter  = require('./lib/poolWriter')
 
-var config = {}
-var stati  = {}
+var MAX_PARALLEL  = 3
+var POLL_INTERVAL = 10 * 1000
 
 listHandler.init()
 
+function debug(msg, obj) {
+    console.log("DEBUG :: " + msg + " ::")
+    console.log(util.inspect(obj, {showHidden: true, depth: null, colors: true}))
+}
+
+function exit() {
+    util.log("Caught sigint, exiting")
+
+    process.exit(0)
+}
+
 function hup() {
-    util.log("Got sighup, reloading configuration")
+    util.log("Caught sighup, reloading configuration")
 
-    fetchConfig()
+    refreshConfig()
 }
 
-function poll() {
-    fetchConfig()
-    setInterval(pollServices, 5000)
+function init() {
+    util.log("Polling shall commence")
 
-    util.log("Started polling")
+    refreshConfig()
+    setTimeout(pollServices, 1000)
 }
 
-function fetchConfig() {
+function refreshConfig() {
     var opt = {
         method: 'GET',
         host:   'puppetmaster.dicole.net',
         port:   80,
-        path:   '/pool.config'
+        path:   '/pool.conf'
     }
 
-    makeRequest(opt, updateConfig)
+    makeRequest(opt, updateConfig, 1000)
 }
 
-function updateConfig(opt, data) {
-    data.split('\n').forEach(function(value, index) {
-        var tmp = value.split(' ')
-        var intent = tmp[0], hash = tmp[1]
+function updateConfig(data) {
+    var config = {}
 
-        if (!valid(intent, hash)) return
+    data.split('\n').forEach(function(line) {
+        var found = line.match(/^([a-z]+)\s([0-9a-f]{40})/)
 
-        config[intent] = hash
+        if (found) {
+            config[found[2]] = found[1]
+            // i.e. config.hash = intent
+        }
     })
+
+    poolWriter.setConfig(config)
 }
 
 function pollServices() {
-    for (var i in listHandler.theList) {
-        var opt = {
-            method: 'POST',
-            host:   'localhost',
-            port:   listHandler.theList[i],
-            path:   '/pool'
-        }
+    var worklist = []
 
-        makeRequest(opt, report)
-    }
+    listHandler.theList.forEach(function(service) {
+        worklist.push(function(callback) {
+            var opt = {
+                method: 'POST',
+                host:   service.addr,
+                port:   service.port,
+                path:   '/pool'
+            }
 
-    writePool(config, stati)
+            makeRequest(opt, function(answer) {
+                if (answer) {
+                    var found = answer.match(/^([a-z]+)\s([0-9a-f]{40})/)
+                }
+
+                service['intent'] = found? found[1]: null
+                service['hash']   = found? found[2]: null
+
+                callback(null, service)
+            })
+        })
+    })
+
+    async.parallelLimit(worklist, MAX_PARALLEL, poolWriter.process)
+
+    setTimeout(pollServices, POLL_INTERVAL)
 }
 
-function report(opt, result) {
-    var tmp = result.split(' ')
-    var intent = tmp[0], hash = tmp[1]
-    var port = opt['port']
-
-    if (!valid(intent, hash)) return
-
-    if (stati[intent] === undefined) {
-        stati[intent] = {}
-    }
-
-    stati[intent][port] = {
-        'hash': hash,
-        'time': new Date().getTime()
-    }
-}
-
-function valid(intent, hash) {
-    if (!intent.match(/^[a-z]+$/))  return false
-    if (!hash.match(/^[0-9a-z]+$/)) return false
-
-    return true
-}
+process.on('SIGINT', exit)
 
 process.on('SIGHUP', hup)
 
-poll()
+init()
