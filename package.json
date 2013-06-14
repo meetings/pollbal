@@ -1,11 +1,11 @@
 {
   "name": "pollbal",
   "version": "0.0.1",
-  "description": "Resource polling agent for Perlbal",
+  "description": "Resource polling tool for Perlbal",
   "dependencies": {
     "async": "~ 0.2"
   },
-  "bin": "./index.js",
+  "bin": "./pollbal.js",
   "scripts": {
     "test": "echo No tests specified"
   },
@@ -14,12 +14,11 @@
     "url": "git://github.com/meetings/pollbal.git"
   },
   "keywords": [
-    "perlbal"
+    "perlbal", "failover", "load balance"
   ],
   "author": "Tuomas Starck <tuomas@meetin.gs>",
   "license": "BSD",
   "readmeFilename": "README.md",
-  "gitHead": "ad6708c5d73542ef6611bcc71cb774f21348148a",
   "bugs": {
     "url": "https://github.com/meetings/pollbal/issues"
   }
