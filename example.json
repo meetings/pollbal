@@ -1,0 +1,30 @@
+{
+
+"README": [
+    "This configuration MUST be valid JSON data.",
+    "",
+    "",
+    "Nonoptional values (i.e. must be present) are:",
+    "  pool_directory",
+    "  services_file",
+    "  poll_interval",
+    "  service_timeout",
+    "",
+    "Time values are in milliseconds."
+],
+
+"pool_directory":          "/run/pool",
+"services_file":           "/etc/pollbal.services",
+
+"poll_interval":           "<time>",
+"service_timeout":         "<time>",
+
+"remote_config_url":       "<url>",
+"remote_config_interval":  "<time>",
+
+"post_init_hook":          ["cmd", "arg1", "arg2", "..."],
+"pre_quit_hook":           [],
+"file_update_hook":        [],
+"file_remove_hook":        []
+
+}

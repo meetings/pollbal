@@ -1,0 +1,13 @@
+
+TODO
+
+ - #5 Signaling system
+ - #7 Provide util script for backend pool control
+
+ + #1 Interface for defining polled services
+ + #2 Any hash
+ + #3 Write files like no program has ever written
+ + #4 Local configuration
+ + #6 Shell command hooks
+ + #8 Services without name
+ + #9 Use GET and no-cache

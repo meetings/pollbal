@@ -1,9 +1,10 @@
 {
   "name": "pollbal",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "description": "Resource polling tool for Perlbal",
   "dependencies": {
-    "async": "~ 0.2"
+    "request": "~ 2.22",
+    "underscore": "~ 1.5"
   },
   "bin": "./pollbal.js",
   "scripts": {
