@@ -2,7 +2,7 @@
 
 /*\
  *  pollbal.js
- *  2013-09-30 / Meetin.gs
+ *  2013-10-01 / Meetin.gs
 \*/
 
 var _    = require('underscore')
@@ -11,7 +11,7 @@ var util = require('util')
 
 var Request      = require('./lib/http').request
 var GetServices  = require('./lib/getServices').getServices
-var StateMachine = require('./lib/stateWriter')
+var StateMachine = require('./lib/stateMachine')
 var ShellExec    = require('./lib/shellHook').exec
 
 var Conf         = require('/etc/pollbal.json')
@@ -150,7 +150,12 @@ function init() {
         }
     }
 
-    StateMachine.setPoolDir(Conf.pool_directory)
+    StateMachine.handConfigOver(Conf)
+
+    ShellExec(Conf.pre_init_hook, {
+        POLLBAL_POOL_DIRECTORY: Conf.pool_directory,
+        POLLBAL_SERVICES_FILE:  Conf.services_file
+    })
 
     var services = GetServices(Conf.services_file, wishfulQuit)
 
@@ -159,17 +164,17 @@ function init() {
         process.exit(1)
     }
 
-    ShellExec(Conf.post_init_hook, {
-        POLLBAL_POOL_DIRECTORY: Conf.pool_directory,
-        POLLBAL_SERVICES_FILE:  Conf.services_file
+    services.forEach(function(service) {
+        setTimeout(
+            function() { pollService(service) },
+            randomInt(1, Conf.poll_interval)
+        )
     })
 
-    services.forEach(function(s) {
-        /* Start polling threads with some initial jitter to
-         * avoid making all the http requests at the same time.
-         */
-        setTimeout(function() { pollService(s) }, randomInt(1, Conf.poll_interval))
-    })
+    setTimeout(
+        StateMachine.initialFlush,
+        parseInt(Conf.poll_interval, 10) + parseInt(Conf.service_timeout, 10)
+    )
 }
 
 process.on('SIGHUP', wishfulQuit)
