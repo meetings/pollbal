@@ -1,13 +1,22 @@
 
 TODO
 
- - #5 Signaling system
  - #7 Provide util script for backend pool control
+ - Remote update only the active configuration
+   - Separate active configuration for main configuration
+   - Fetch remote active configuration 1st when available
+   - Utilize inotify for local active configuration
+ - A tought: add name to active configuration and copy
+   pool files as pool_name.pool or sumetin
+ - Use pool specific poll_interval and service_timeout
+   if configured
+ - Rename active_services to guaranteed_pools
 
  + #1 Interface for defining polled services
  + #2 Any hash
  + #3 Write files like no program has ever written
  + #4 Local configuration
+ + #5 Signaling system
  + #6 Shell command hooks
  + #8 Services without name
  + #9 Use GET and no-cache

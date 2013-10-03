@@ -2,7 +2,7 @@
 
 /*\
  *  pollbal.js
- *  2013-10-01 / Meetin.gs
+ *  2013-10-03 / Meetin.gs
 \*/
 
 var _    = require('underscore')
@@ -14,12 +14,14 @@ var GetServices  = require('./lib/getServices').getServices
 var StateMachine = require('./lib/stateMachine')
 var ShellExec    = require('./lib/shellHook').exec
 
-var Conf         = require('/etc/pollbal.json')
-
+var ConfFile     = process.env.POLLBAL_CONFIG || '/etc/pollbal.json'
+var Conf         = require(ConfFile)
 
 /* * * ACTUAL POLLING * * * * * * * * * */
 
 function pollService(service) {
+    /// util.log("Polling " + service.name)
+
     var opts = {
         uri:     'http://' + service.addr + ':' + service.port + '/pool',
         headers: { 'Cache-Control': 'no-cache' },
@@ -29,13 +31,13 @@ function pollService(service) {
     Request(opts, function(err, reply) {
         var data = parseReply(reply)
 
-        if (err || data.pool == null) {
+        if (err || data.pool === null) {
             StateMachine.fail(service.addr, service.port)
         }
         else {
             StateMachine.success(
                 data.pool, service.addr, service.port,
-                data.vers, data.stat, service.name
+                data.vers, data.stat
             )
         }
 
@@ -62,17 +64,17 @@ function parseReply(reply) {
         vers: 'any'
     }
 
-    if (reply == null) {
+    if (reply === null) {
         return valid
     }
     else if (_.isString(reply)) {
-        var parts = reply.split(/\s+/)
+        parts = reply.split(/\s+/)
     }
     else {
         return valid
     }
 
-    if (parts.length == 0) return valid
+    if (parts.length === 0) return valid
 
     if (parts.length > 0) {
         if (/^[\w\-]+$/.test(parts[0])) {
@@ -95,7 +97,6 @@ function parseReply(reply) {
     return valid
 }
 
-
 /* * * INIT AND QUIT  * * * * * * * * * */
 
 function wishfulQuit() {
@@ -107,9 +108,20 @@ function randomInt(min, max) {
     return Math.round(Math.random() * (max - min) + min)
 }
 
+function jsonWriteCallback(err) {
+    if (err) {
+        util.log("!!! Failed to overwrite existing configuration")
+        return
+    }
+
+    util.log("Configuration upgraded, restarting")
+    wishfulQuit()
+}
+
 function jsonWrite(json) {
-    fs.writeFileSync(
-        '/etc/pollbal.json', JSON.stringify(json), { encoding: 'utf8' }
+    fs.writeFile(
+        ConfFile, JSON.stringify(json),
+        { encoding: 'utf8' }, jsonWriteCallback
     )
 }
 
@@ -117,23 +129,32 @@ function upgradeConfig() {
     var upgrade = {}
     var opts = { uri: Conf.remote_config_url }
 
-    http.request(opts, function(err, data) {
+    Request(opts, function(err, data) {
+        if (err) {
+            util.log("!!! Unable to fetch remote configuration")
+            return
+        }
+
         try {
             upgrade = JSON.parse(data)
         }
         catch (err) {
-            util.error("Failed to parse remote configuration upgrade")
+            util.log("!!! Failed to parse remote configuration")
         }
 
-        if (!_.isEqual(Conf, upgrade)) {
+        if (_.isEqual(Conf, upgrade)) {
+            util.log("Configuration has not changed")
+        }
+        else {
             util.log("Upgrading configuration")
             jsonWrite(upgrade)
-            wishfulQuit()
         }
     })
 }
 
 function init() {
+    debug("CURRENT CONFIGURATION", Conf)
+
     util.log("Pollbal initializing")
 
     if (Conf.remote_config_url) {
@@ -142,7 +163,7 @@ function init() {
                 "Checking configuration upgrade every %s ms",
                 Conf.remote_config_interval
             ))
-            setTimeout(upgradeConfig, Conf.remote_config_interval)
+            setInterval(upgradeConfig, Conf.remote_config_interval)
         }
         else {
             util.log("Trying remote configuration upgrade")
@@ -159,8 +180,8 @@ function init() {
 
     var services = GetServices(Conf.services_file, wishfulQuit)
 
-    if (services == null) {
-        util.log("Failed to read machinae information")
+    if (services === null) {
+        util.log("!!! Failed to read machinae information")
         process.exit(1)
     }
 

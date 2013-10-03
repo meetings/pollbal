@@ -3,7 +3,6 @@
 "README": [
     "This configuration MUST be valid JSON data.",
     "",
-    "",
     "Nonoptional values (i.e. must be present) are:",
     "  pool_directory",
     "  services_file",
@@ -18,10 +17,28 @@
 
 "poll_interval":           "<time>",
 "service_timeout":         "<time>",
+"pool_warning_interval":   "<time>",
 
 "remote_config_url":       "<url>",
 "remote_config_interval":  "<time>",
 
+"active_services": [
+    { "pool_name": {
+        "version":  "<version>",
+        "required": "<int>"
+    } },
+    { "another_pool_name": {
+        "version":  "<version>",
+        "required": "<int>"
+    } }
+],
+
+"SHELL HOOKS": [
+    "Hooks for external commands are fully optional.",
+    "Empty array will disable the hook."
+],
+
+"pre_init_hook":           ["Example:"],
 "post_init_hook":          ["cmd", "arg1", "arg2", "..."],
 "pre_quit_hook":           [],
 "file_update_hook":        [],
