@@ -8,33 +8,43 @@ Tool to poll service hosts and generate pool files for *Perlbal*. The idea shoul
 Define the IP and PORT for all nodes that acts as HTTP pool members:
 
     # /etc/pollbal.services
-    10.0.0.1 80
-    10.0.0.2 80
-    10.0.0.3 80
-
-Define the HTTP pools where the nodes can be assigned to:
-
-    # /etc/pollbal.conf
-    {
-        "active_services": [
-            { "api" : {
-                "version" : "898f7f2404f12907a4e0d22fdfd5dbab144c787b"
-            },
-            { "website: {} }
-        ]
-    }
+    10.0.0.1 80 # api-node-1
+    10.0.0.2 80 # api-node-2
+    10.0.0.3 80 # website-node-1
+    10.0.0.4 80 # website-node-2
 
 Start the service on an Ubuntu system
 
     ~ # service pollbal start
+    
+This should start sending HTTP "GET /pool" -requests to all of the listed services periodically. The requests might return for example the following:
 
-This causes the nodes to get assigned to different files based on what they return as their poll data:
+    api-node-1      --> api serving ce0a2b02e2d6fb3d03327cf53fd4393f908ef8bd
+    api-node-2      --> api serving 898f7f2404f12907a4e0d22fdfd5dbab144c787b
+    website-node-1  --> website
+    website-node-2  --> website leaving
+
+This causes the nodes to get assigned to one or more .pool files:
 
     ~ # cat /run/pool/api.pool
-    10.0.0.2 80
-    10.0.0.3 80  
+    10.0.0.1 80 # api-node-1
+    10.0.0.2 80 # api-node-2
+
+
+    ~ # cat /run/pool/api.ce0a2b02e2d6fb3d03327cf53fd4393f908ef8bd.pool
+    10.0.0.1 80 # api-node-1
+
+
+    ~ # cat /run/pool/api.898f7f2404f12907a4e0d22fdfd5dbab144c787b.pool
+    10.0.0.2 80 # api-node-2
+
+
     ~ # cat /run/pool/website.pool
-    10.0.0.1 80
+    10.0.0.3 80 # website-node-1
+
+
+    ~ # cat /run/pool/disabled_services
+    10.0.0.4 80 # website-node-2
 
 ## Example usage on HTTP pool member nodes 
 
@@ -106,10 +116,6 @@ Pollbal expects to find its main configuration in */etc/pollbal.json*. See
     poll_interval          - Time to wait between sending poll requests.
     service_timeout        - Time to wait for the service to respond. If service does not
                              respond quick enough, it is considered failed.
-    remote_config_url      - An address from where a new configuration is fetched. This can
-                             be used to update the configuration, but must be used with care
-                             since local configuration is overwritten.
-    remote_config_interval - An interval for checking remote configuration for updates.
 
 Following options define external commands to be executed at predefined events.
 Valid values must be JSON arrays, in where first element is the command and the
@@ -128,13 +134,3 @@ and therefore the precise state of pollbal or pool files cannot be guaranteed.
                              are passed:
                              POLLBAL_POOL_DIRECTORY POLLBAL_FILE_NAME
 
-### Services
-
-Configuration option *services\_file* defines a path to a file which holds the services
-to be polled. Each service must have an address and a port separated which space. Services
-are separated with newline. Comments and empty lines are ignored.
-```
-# This is an example of two services
-10.0.0.1  80
-10.0.0.2  80
-```
